@@ -9,24 +9,24 @@
 	<insert id="adminInsertCate" parameterType="java.util.Map">
 		<choose>
 			<when test="cateType == 'board'">
-				INSERT INTO CATEGORYS (CATE_IDX, CATE_NAME)
-				VALUES ((SELECT COALESCE(MAX(CATE_IDX), 0) + 1 FROM CATEGORYS WHERE CATE_IDX BETWEEN 100 AND 199), #{cateName})
+				INSERT INTO CATEGORYS (CATE_NAME, CATEGORY)
+				VALUES (#{cateName}, 'board')
 			</when>
 			<when test="cateType == 'game'">
-				INSERT INTO CATEGORYS (CATE_IDX, CATE_NAME)
-				VALUES ((SELECT COALESCE(MAX(CATE_IDX), 199) + 1 FROM CATEGORYS WHERE CATE_IDX BETWEEN 200 AND 299), #{cateName})
+				INSERT INTO CATEGORYS (CATE_NAME, CATEGORY)
+				VALUES (#{cateName}, 'game')
 			</when>
 			<when test="cateType == 'pointStatus'">
-				INSERT INTO CATEGORYS (CATE_IDX, CATE_NAME)
-				VALUES ((SELECT COALESCE(MAX(CATE_IDX), 299) + 1 FROM CATEGORYS WHERE CATE_IDX BETWEEN 300 AND 399), #{cateName})
+				INSERT INTO CATEGORYS (CATE_NAME, CATEGORY)
+				VALUES (#{cateName}, 'pointStatus')
 			</when>
 			<when test="cateType == 'prods'">
-				INSERT INTO CATEGORYS (CATE_IDX, CATE_NAME)
-				VALUES ((SELECT COALESCE(MAX(CATE_IDX), 399) + 1 FROM CATEGORYS WHERE CATE_IDX BETWEEN 400 AND 499), #{cateName})
+				INSERT INTO CATEGORYS (CATE_NAME, CATEGORY)
+				VALUES (#{cateName}, 'prods')
 			</when>
 			<when test="cateType == 'question'">
-				INSERT INTO CATEGORYS (CATE_IDX, CATE_NAME)
-				VALUES ((SELECT COALESCE(MAX(CATE_IDX), 499) + 1 FROM CATEGORYS WHERE CATE_IDX BETWEEN 500 AND 599), #{cateName})
+				INSERT INTO CATEGORYS (CATE_NAME, CATEGORY)
+				VALUES (#{cateName}, 'question')
 			</when>
 		</choose>
 	</insert>
@@ -38,12 +38,12 @@
 
 	<!-- 게임 카테고리 데이터 조회를 위한 쿼리 -->
 	<select id="gaebalGetGameCate" parameterType="string" resultType="cate">
-		SELECT * FROM CATEGORYS WHERE CATE_IDX BETWEEN 200 AND 299
+		SELECT * FROM CATEGORYS WHERE CATEGORY = 'game'
 	</select>
 
 	<!-- 질문 카테고리 데이터 조회를 위한 쿼리 -->
 	<select id="gaebalGetQuestionCate" parameterType="string" resultType="cate">
-		SELECT * FROM CATEGORYS WHERE CATE_IDX BETWEEN 400 AND 499
+		SELECT * FROM CATEGORYS WHERE CATEGORY = 'question'
 	</select>
 
 	<select id="getMemPoint" parameterType="member" resultType="member">
@@ -58,14 +58,14 @@
 
 	<!-- 상품 카테고리 데이터 조회를 위한 쿼리 -->
 	<select id="gaebalGetProductCate" parameterType="string" resultType="cate">
-		SELECT * FROM CATEGORYS WHERE CATE_IDX BETWEEN 300 AND 399
+		SELECT * FROM CATEGORYS WHERE CATEGORY = 'prods'
 	</select>
 
 	<!-- 메인페이지에 공지사항만 불러오기 -->
 	<select id="getNotice" resultType="board">
 		SELECT *
 		FROM BOARDS
-		WHERE CATE_IDX = 100
+		WHERE CATE_NAME = '공지사항'
 	</select>
 
 </mapper>
