@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="productDAO">
+
+	<!-- 상품 리스트 (상품 코드로 검색) -->
+	<select id="getProductList_I" parameterType="string" resultType="product">
+		SELECT *
+		FROM PRODUCTS
+		WHERE PRODUCT_IDX LIKE CONCAT('%', #{searchKeyword}, '%')
+		AND PRODUCT_IDX NOT IN (0)
+		ORDER BY PRODUCT_IDX DESC
+	</select>
+
+	<!-- 상품 리스트 (상품 이름으로 검색) -->
+	<select id="getProductList_N" parameterType="string" resultType="product">
+		SELECT *
+		FROM PRODUCTS
+		WHERE PRODUCT_NAME LIKE CONCAT('%', #{searchKeyword}, '%')
+		AND PRODUCT_IDX NOT IN (0)
+		ORDER BY PRODUCT_IDX DESC
+	</select>
+
+	<!-- 동적 검색 조건을 사용한 상품 리스트 -->
+	<select id="getProductList_Where" parameterType="product" resultType="product">
+		SELECT *
+		FROM PRODUCTS
+		<where>
+			<if test='searchCondition == "PRODUCT_IDX" and searchKeyword != ""'>
+				AND PRODUCT_IDX LIKE CONCAT('%', #{searchKeyword}, '%')
+			</if>
+			<if test='searchCondition == "PRODUCT_NAME" and searchKeyword != ""'>
+				AND PRODUCT_NAME LIKE CONCAT('%', #{searchKeyword}, '%')
+			</if>
+		</where>
+		ORDER BY PRODUCT_IDX DESC
+	</select>
+
+	<!-- 상품 리스트 (모든 상품) -->
+	<select id="getProductList" parameterType="product" resultType="product">
+		SELECT *
+		FROM PRODUCTS
+		WHERE PRODUCT_IDX NOT IN (0)
+		ORDER BY PRODUCT_IDX DESC
+	</select>
+
+	<!-- 특정 상품 조회 -->
+	<select id="getProduct" parameterType="product" resultType="product">
+		SELECT *
+		FROM PRODUCTS
+		WHERE PRODUCT_IDX = #{productIdx}
+	</select>
+
+	<!-- 상품 추가 -->
+	<insert id="insertProduct" parameterType="product">
+		INSERT INTO PRODUCTS
+		(CATE_IDX, PRODUCT_NAME, PRODUCT_ORI, PRODUCT_FILE, PRODUCT_CONTENT, PRODUCT_PRICE, PRODUCT_STOCK, PRODUCT_DATE)
+		VALUES (#{cateIdx}, #{productName}, #{productOri}, #{productFile}, #{productContent}, #{productPrice}, #{productStock}, NOW())
+	</insert>
+
+	<!-- 상품 수정 -->
+	<update id="updateProduct" parameterType="product">
+		UPDATE PRODUCTS
+		SET
+		CATE_IDX = #{cateIdx},
+		PRODUCT_NAME = #{productName},
+		PRODUCT_ORI = #{productOri},
+		PRODUCT_FILE = #{productFile},
+		PRODUCT_CONTENT = #{productContent},
+		PRODUCT_PRICE = #{productPrice}
+		WHERE PRODUCT_IDX = #{productIdx}
+	</update>
+
+	<!-- 상품 삭제 -->
+	<delete id="deleteProduct" parameterType="product">
+		DELETE FROM PRODUCTS
+		WHERE PRODUCT_IDX = #{productIdx}
+	</delete>
+
+	<!-- 전체 상품 개수 구하기 -->
+	<select id="Count" resultType="Integer">
+		<![CDATA[
+		SELECT COUNT(PRODUCT_IDX)
+		FROM PRODUCTS
+		WHERE CATE_IDX >= 300 AND CATE_IDX < 400
+		]]>
+	</select>
+
+	<!-- 페이징 처리 -->
+	<select id="getAdProductPagingList" parameterType="java.util.HashMap" resultType="product">
+		<![CDATA[
+		SELECT *
+		FROM (
+		SELECT P.*, C.CATE_NAME,
+		ROW_NUMBER() OVER (ORDER BY PRODUCT_IDX DESC) AS CNUM
+		FROM PRODUCTS P
+		JOIN CATEGORYS C ON P.CATE_IDX = C.CATE_IDX
+		WHERE P.CATE_IDX >= 300 AND P.CATE_IDX < 400
+		AND P.PRODUCT_IDX NOT IN (0)
+		) F
+		WHERE F.CNUM > #{start} AND F.CNUM <= (#{start} + #{limit})
+		]]>
+	</select>
+</mapper>

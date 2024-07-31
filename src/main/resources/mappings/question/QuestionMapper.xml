@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="question">
+
+	<!-- QUESTIONS 테이블 데이터 추가 쿼리 -->
+	<insert id="gaebalQuestionInsert" parameterType="question">
+		INSERT INTO QUESTIONS (MEMBER_IDX, PRODUCT_IDX, CATE_IDX,
+		QUESTION_TITLE, QUESTION_CONTENT, QUESTION_ORI, QUESTION_FILE)
+		<choose>
+			<when test="cateIdx == 404">
+				VALUES (#{memberIdx}, #{productIdx}, #{cateIdx},
+				#{questionTitle}, #{questionContent}, #{questionOri}, #{questionFile})
+			</when>
+			<otherwise>
+				VALUES (#{memberIdx}, 0, #{cateIdx},
+				#{questionTitle}, #{questionContent}, #{questionOri}, #{questionFile})
+			</otherwise>
+		</choose>
+	</insert>
+
+	<!-- QUESTIONS 테이블 데이터 수정 쿼리 -->
+	<update id="gaebalQuestionUpdate" parameterType="question">
+		UPDATE QUESTIONS
+		SET CATE_IDX = #{cateIdx},
+		QUESTION_TITLE = #{questionTitle},
+		QUESTION_CONTENT = #{questionContent}
+		WHERE QUESTION_IDX = #{questionIdx}
+	</update>
+
+	<!-- QUESTIONS 테이블 데이터 삭제 쿼리 -->
+	<delete id="gaebalQuestionDelete" parameterType="question">
+		DELETE FROM QUESTIONS WHERE QUESTION_IDX = #{questionIdx}
+	</delete>
+
+	<!-- QUESTIONS 테이블 데이터 조회 쿼리 -->
+	<select id="gaebalQuestionAllList" parameterType="question" resultType="question">
+		SELECT
+		Q.QUESTION_IDX,
+		Q.QUESTION_TITLE,
+		Q.QUESTION_CONTENT,
+		Q.QUESTION_DATE,
+		M.NICKNAME,
+		C.CATE_NAME
+		FROM QUESTIONS Q
+		JOIN MEMBERS M ON Q.MEMBER_IDX = M.MEMBER_IDX
+		JOIN CATEGORYS C ON Q.CATE_IDX = C.CATE_IDX
+		ORDER BY Q.QUESTION_IDX DESC
+	</select>
+
+	<select id="gaebalQuestionNickname" parameterType="question" resultType="question">
+		SELECT
+		Q.QUESTION_IDX,
+		Q.QUESTION_TITLE,
+		Q.QUESTION_CONTENT,
+		Q.QUESTION_DATE,
+		M.NICKNAME,
+		C.CATE_NAME
+		FROM QUESTIONS Q
+		JOIN MEMBERS M ON M.MEMBER_IDX = Q.MEMBER_IDX
+		JOIN CATEGORYS C ON Q.CATE_IDX = C.CATE_IDX
+		WHERE M.NICKNAME LIKE CONCAT('%', #{nickname}, '%')
+		ORDER BY Q.QUESTION_IDX DESC
+	</select>
+
+	<select id="gaebalQuestionTitle" parameterType="question" resultType="question">
+		SELECT
+		Q.QUESTION_IDX,
+		Q.QUESTION_TITLE,
+		Q.QUESTION_CONTENT,
+		Q.QUESTION_DATE,
+		M.NICKNAME,
+		C.CATE_NAME
+		FROM QUESTIONS Q
+		JOIN MEMBERS M ON M.MEMBER_IDX = Q.MEMBER_IDX
+		JOIN CATEGORYS C ON Q.CATE_IDX = C.CATE_IDX
+		WHERE Q.QUESTION_TITLE LIKE CONCAT('%', #{questionTitle}, '%')
+		ORDER BY Q.QUESTION_IDX DESC
+	</select>
+
+	<!-- QUESTIONS 테이블 데이터 1개 상세보기 위한 쿼리 -->
+	<select id="gaebalQuestion" parameterType="question" resultType="question">
+		SELECT Q.*, M.NICKNAME
+		FROM QUESTIONS Q
+		JOIN MEMBERS M ON Q.MEMBER_IDX = M.MEMBER_IDX
+		WHERE Q.QUESTION_IDX = #{questionIdx}
+	</select>
+
+	<!-- 상품 대분류 가져오기 -->
+	<select id="gaebalGetprodsMainCate" parameterType="question" resultType="question">
+		SELECT * FROM CATEGORYS WHERE CATE_IDX BETWEEN 300 AND 399
+	</select>
+
+	<!-- 상품 이름 가져오기 -->
+	<select id="gaebalGetProdsName" parameterType="product" resultType="product">
+		SELECT P.PRODUCT_IDX, P.PRODUCT_NAME
+		FROM CATEGORYS C
+		JOIN PRODUCTS P ON C.CATE_IDX = P.CATE_IDX
+		WHERE C.CATE_IDX = #{cateIdx}
+	</select>
+
+	<select id="admingetQuestionList" parameterType="question" resultType="question">
+		SELECT Q.*, C.CATE_NAME
+		FROM QUESTIONS Q
+		JOIN CATEGORYS C ON Q.CATE_IDX = C.CATE_IDX
+		ORDER BY Q.QUESTION_IDX DESC
+	</select>
+
+	<select id="admingetQuestion" parameterType="int" resultType="question">
+		SELECT Q.*, M.NICKNAME, C.CATE_NAME, P.PRODUCT_NAME
+		FROM QUESTIONS Q
+		LEFT JOIN PRODUCTS P ON Q.PRODUCT_IDX = P.PRODUCT_IDX
+		JOIN MEMBERS M ON Q.MEMBER_IDX = M.MEMBER_IDX
+		LEFT JOIN CATEGORYS C ON Q.CATE_IDX = C.CATE_IDX
+		WHERE Q.QUESTION_IDX = #{questionIdx}
+	</select>
+
+	<select id="admingetAnswer" parameterType="int" resultType="answer">
+		SELECT *
+		FROM ANSWERS
+		WHERE QUESTION_IDX = #{questionIdx}
+		ORDER BY ANSWER_IDX DESC
+	</select>
+
+	<select id="adminanswerCnt" parameterType="int" resultType="int">
+		SELECT COUNT(ANSWER_IDX)
+		FROM ANSWERS
+		WHERE QUESTION_IDX = #{questionIdx}
+	</select>
+
+	<insert id="adminanswerinsert" parameterType="answer">
+		INSERT INTO ANSWERS (QUESTION_IDX, CONTENT, ANSWER_DATE)
+		VALUES (#{questionIdx}, #{content}, NOW())
+	</insert>
+
+	<!-- 문의 페이징처리 -->
+	<select id="adminQuestionPaging" parameterType="java.util.HashMap" resultType="question">
+		<![CDATA[
+        SELECT *
+        FROM (
+            SELECT Q.*, C.CATE_NAME,
+                   ROW_NUMBER() OVER (ORDER BY Q.QUESTION_IDX DESC) AS CNUM
+            FROM QUESTIONS Q
+            JOIN CATEGORYS C ON Q.CATE_IDX = C.CATE_IDX
+        ) F
+        WHERE F.CNUM > #{start} AND F.CNUM <= (#{start} + #{limit})
+        ]]>
+	</select>
+
+	<!-- 문의 개수 구하기 -->
+	<select id="adminQuestionCount" resultType="Integer">
+		SELECT COUNT(QUESTION_IDX) FROM QUESTIONS
+	</select>
+
+</mapper>

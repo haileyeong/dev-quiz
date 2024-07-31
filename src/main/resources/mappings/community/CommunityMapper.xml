@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="communityDAO">
+
+	<!-- 게시글 1개 조회 -->
+	<select id="getCommunity" parameterType="community" resultType="community">
+		SELECT B.*, M.NICKNAME, C.CATE_NAME
+		FROM BOARDS B
+		JOIN MEMBERS M ON B.MEMBER_IDX = M.MEMBER_IDX
+		JOIN CATEGORYS C ON B.CATE_IDX = C.CATE_IDX
+		WHERE B.BOARD_IDX = #{boardIdx}
+	</select>
+
+	<!-- 게시글 삭제 -->
+	<delete id="deleteCommunity" parameterType="community">
+		DELETE FROM BOARDS
+		WHERE BOARD_IDX = #{boardIdx}
+	</delete>
+
+	<!-- 게시글 수정 -->
+	<update id="updateCommunity" parameterType="community">
+		UPDATE BOARDS
+		SET CATE_IDX = #{cateIdx},
+		TITLE = #{title},
+		CONTENT = #{content},
+		REG_DATE = NOW(), <!-- MySQL의 현재 시간 함수 NOW() 사용 -->
+		BOARD_ORI = #{boardOri},
+		BOARD_FILE = #{boardFile}
+		WHERE BOARD_IDX = #{boardIdx}
+	</update>
+
+	<!-- 조회수 1 증가 -->
+	<update id="increaseHit" parameterType="community">
+		UPDATE BOARDS
+		SET HIT = HIT + 1
+		WHERE BOARD_IDX = #{boardIdx}
+	</update>
+
+	<!-- 게시글 작성 -->
+	<insert id="insertCommunity" parameterType="community">
+		INSERT INTO BOARDS (BOARD_IDX, MEMBER_IDX, CATE_IDX, TITLE, CONTENT, HIT, REG_DATE, BOARD_ORI, BOARD_FILE)
+		VALUES (NULL, #{memberIdx}, #{cateIdx}, #{title}, #{content}, 0, NOW(), #{boardOri}, #{boardFile})
+	</insert>
+
+	<!-- 해당 게시글 내 댓글 조회 -->
+	<select id="getCommentList" parameterType="community" resultType="comment">
+		SELECT C.*, M.NICKNAME
+		FROM COMMENTS C
+		JOIN MEMBERS M ON C.MEMBER_IDX = M.MEMBER_IDX
+		WHERE C.BOARD_IDX = #{boardIdx}
+	</select>
+
+	<!-- 댓글 작성(DB에 저장) -->
+	<insert id="insertComment" parameterType="comment">
+		INSERT INTO COMMENTS (COMM_IDX, BOARD_IDX, MEMBER_IDX, COMM_CONTENT, COMM_DATE)
+		VALUES (NULL, #{boardIdx}, #{memberIdx}, #{commContent}, NOW())
+	</insert>
+
+	<!-- 댓글 삭제 -->
+	<delete id="deleteComment" parameterType="comment">
+		DELETE FROM COMMENTS
+		WHERE COMM_IDX = #{commIdx}
+	</delete>
+
+	<!-- 댓글 수정 -->
+	<update id="updateComment" parameterType="comment">
+		UPDATE COMMENTS
+		SET COMM_CONTENT = #{commContent}
+		WHERE COMM_IDX = #{commIdx}
+	</update>
+
+	<!-- 페이징 처리 -->
+	<select id="getCommunityPagingList" parameterType="java.util.HashMap" resultType="community">
+		<![CDATA[
+            SELECT F.*
+            FROM (
+                SELECT A.*, @rownum := @rownum + 1 AS CNUM
+                FROM (
+                    SELECT B.*, M.NICKNAME, C.CATE_NAME
+                    FROM BOARDS B
+                    JOIN MEMBERS M ON B.MEMBER_IDX = M.MEMBER_IDX
+                    JOIN CATEGORYS C ON B.CATE_IDX = C.CATE_IDX
+                    WHERE B.CATE_IDX > 100 AND B.CATE_IDX < 200
+                    ORDER BY BOARD_IDX DESC
+                ) A, (SELECT @rownum := 0) r
+            ) F
+            WHERE F.CNUM > #{start} AND F.CNUM <= (#{start} + #{limit})
+        ]]>
+	</select>
+
+	<!-- 해당 카테고리 게시글만 조회 -->
+	<select id="getCommunityPagingListByCate" parameterType="java.util.HashMap" resultType="community">
+		<![CDATA[
+            SELECT F.*
+            FROM (
+                SELECT A.*, @rownum := @rownum + 1 AS CNUM
+                FROM (
+                    SELECT B.*, M.NICKNAME, C.CATE_NAME
+                    FROM BOARDS B
+                    JOIN MEMBERS M ON B.MEMBER_IDX = M.MEMBER_IDX
+                    JOIN CATEGORYS C ON B.CATE_IDX = C.CATE_IDX
+                    WHERE B.CATE_IDX = #{cateIdx}
+                    ORDER BY B.BOARD_IDX DESC
+                ) A, (SELECT @rownum := 0) r
+            ) F
+            WHERE F.CNUM > #{start} AND F.CNUM <= (#{start} + #{limit})
+        ]]>
+	</select>
+
+	<!-- 전체 게시글 개수 구하기 -->
+	<select id="communityBoardCount" resultType="Integer">
+		<![CDATA[
+            SELECT COUNT(BOARD_IDX)
+            FROM BOARDS
+            WHERE CATE_IDX > 100 AND CATE_IDX < 200
+        ]]>
+	</select>
+
+	<!-- 해당 카테고리 게시글 개수 구하기 -->
+	<select id="communityBoardCountByCate" parameterType="int" resultType="Integer">
+		SELECT COUNT(BOARD_IDX)
+		FROM BOARDS
+		WHERE CATE_IDX = #{cateIdx}
+	</select>
+
+	<!-- 커뮤니티 카테고리 조회 -->
+	<select id="getCommunityCate" resultType="cate">
+		<![CDATA[
+            SELECT *
+            FROM CATEGORYS
+            WHERE CATE_IDX > 100 AND CATE_IDX < 200
+        ]]>
+	</select>
+
+	<!-- selCateIdx에 맞는 cateName 가져오기 -->
+	<select id="getSelCateName" parameterType="int" resultType="String">
+		SELECT CATE_NAME
+		FROM CATEGORYS
+		WHERE CATE_IDX = #{cateIdx}
+	</select>
+
+	<!-- boardIdx에 맞는 이미지 삭제 -->
+	<update id="deleteCommunityImg" parameterType="int">
+		UPDATE BOARDS
+		SET BOARD_ORI = NULL,
+		BOARD_FILE = NULL
+		WHERE BOARD_IDX = #{boardIdx}
+	</update>
+
+	<!-- 조회수 top10 게시글 조회 -->
+	<select id="getHotCommunityList" resultType="community">
+		<![CDATA[
+            SELECT *
+            FROM BOARDS
+            WHERE CATE_IDX > 100 AND CATE_IDX < 200
+            ORDER BY HIT DESC
+            LIMIT 10
+        ]]>
+	</select>
+
+	<!-- title 검색 -->
+	<select id="getSearchCommunityList_T" parameterType="java.util.HashMap" resultType="community">
+		<![CDATA[
+            SELECT F.*
+            FROM (
+                SELECT A.*, @rownum := @rownum + 1 AS CNUM
+                FROM (
+                    SELECT B.*, M.NICKNAME, C.CATE_NAME
+                    FROM BOARDS B
+                    JOIN MEMBERS M ON B.MEMBER_IDX = M.MEMBER_IDX
+                    JOIN CATEGORYS C ON B.CATE_IDX = C.CATE_IDX
+                    WHERE B.CATE_IDX > 100 AND B.CATE_IDX < 200
+                    AND B.TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+                    ORDER BY BOARD_IDX DESC
+                ) A, (SELECT @rownum := 0) r
+            ) F
+            WHERE F.CNUM > #{start} AND F.CNUM <= (#{start} + #{limit})
+        ]]>
+	</select>
+
+	<!-- content 검색 -->
+	<select id="getSearchCommunityList_C" parameterType="java.util.HashMap" resultType="community">
+		<![CDATA[
+            SELECT F.*
+            FROM (
+                SELECT A.*, @rownum := @rownum + 1 AS CNUM
+                FROM (
+                    SELECT B.*, M.NICKNAME, C.CATE_NAME
+                    FROM BOARDS B
+                    JOIN MEMBERS M ON B.MEMBER_IDX = M.MEMBER_IDX
+                    JOIN CATEGORYS C ON B.CATE_IDX = C.CATE_IDX
+                    WHERE B.CATE_IDX > 100 AND B.CATE_IDX < 200
+                    AND B.CONTENT LIKE CONCAT('%', #{searchKeyword}, '%')
+                    ORDER BY BOARD_IDX DESC
+                ) A, (SELECT @rownum := 0) r
+            ) F
+            WHERE F.CNUM > #{start} AND F.CNUM <= (#{start} + #{limit})
+        ]]>
+	</select>
+
+	<!-- title 검색 후 게시글 개수 조회 -->
+	<select id="communityBoardCountByKeywordTitle" parameterType="String" resultType="Integer">
+		<![CDATA[
+            SELECT COUNT(*)
+            FROM BOARDS
+            WHERE TITLE LIKE CONCAT('%', #{searchKeyword}, '%')
+            AND CATE_IDX > 100 AND CATE_IDX < 200
+        ]]>
+	</select>
+
+	<!-- content 검색 후 게시글 개수 조회 -->
+	<select id="communityBoardCountByKeywordContent" parameterType="String" resultType="Integer">
+		<![CDATA[
+            SELECT COUNT(*)
+            FROM BOARDS
+            WHERE CONTENT LIKE CONCAT('%', #{searchKeyword}, '%')
+            AND CATE_IDX > 100 AND CATE_IDX < 200
+        ]]>
+	</select>
+
+	<!-- 멤버 카운트 -->
+	<select id="myWriteList" parameterType="int" resultType="int">
+		SELECT COUNT(*) AS CNT
+		FROM BOARDS
+		WHERE MEMBER_IDX = #{memberIdx}
+	</select>
+
+</mapper>
