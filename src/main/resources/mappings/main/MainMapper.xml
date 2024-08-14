@@ -65,7 +65,7 @@
 	<select id="getNotice" resultType="board">
 		SELECT *
 		FROM BOARDS
-		WHERE CATE_NAME = '공지사항'
+		WHERE CATE_IDX = 2
 	</select>
 
 </mapper>

@@ -41,7 +41,7 @@ public class MainController {
       List<BoardVO> noticeList = mainService.getNotice();
       session.setAttribute("hotCommunityList", hotCommunityList);
       session.setAttribute("noticeList", noticeList);
-      return "devquiz_main";
+      return "index";
    }
 	
 	

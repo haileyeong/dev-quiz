@@ -58,7 +58,7 @@ public class MemberController {
 	//메인페이지로 이동 : 김지홍
 	@RequestMapping("/go_main")
 	public String goMain() {
-		return "devquiz_main";
+		return "index";
 	}
   
 	//회원가입 구현 : 김지홍
@@ -200,7 +200,7 @@ public class MemberController {
 			memberService.deleteMember(loginUser);
 			session.removeAttribute("loginMember");
 		} 
-	  	return "devquiz_main";
+	  	return "index";
 	}
 	
 	//회원 탈퇴(논리) : 김지홍
